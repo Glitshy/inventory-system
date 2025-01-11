@@ -1,0 +1,72 @@
+#!/usr/bin/env python
+#from misc.utility.scons_hints import *
+
+Import("env")
+Import("env_modules")
+
+# Added the following lines to the original file
+print("SCsub inventory_system, target: " + env["target"])
+env = env.Clone()
+print("Old LIBSUFFIX: " + env["LIBSUFFIX"]) # this prints '.windows.editor.x86_64.lib'
+env["LIBSUFFIX"] = "" # overwrite this with an empty string, because otherwise this will be appeded after .windows.template_release.x86_64, causing an error
+print("New LIBSUFFIX: " + env["LIBSUFFIX"])
+
+def get_sufix():
+    suffix = ".{}.{}".format(env["platform"], env["target"])
+    # In godot it's "linuxbsd"
+    suffix = suffix.replace("linuxbsd", "linux")
+    # Only take release
+    suffix = suffix.replace("editor", "template_release")
+    suffix = suffix.replace("template_debug", "template_release") # glitshy commented this line
+    
+    if env.dev_build:
+        suffix += ".dev"
+    if env["precision"] == "double":
+        suffix += ".double"
+    suffix += "." + env["arch"]
+    if not env["threads"]:
+        suffix += ".nothreads"
+    return suffix
+
+# Libraries
+if env["platform"] == "macos" or env["platform"] == "ios":
+    base_path = "#modules/inventory_system/bin/addons/my_library/bin/libmy_library{}.framework".format(get_sufix())
+    base_file = "inventory_system{}".format(get_sufix())
+else:
+    base_path = "#modules/inventory_system/bin/addons/my_library/bin"
+    base_file = "inventory_system{}".format(get_sufix())
+    print(base_path)
+    print(base_file)
+
+env.Append(LIBS=[base_file])
+env.Append(LIBPATH=[base_path])
+
+# Godot-cpp
+base_path = "#modules/inventory_system/ext/godot-cpp/bin"
+base_file = "libgodot-cpp{}".format(get_sufix())
+print(base_path)
+print(base_file)
+
+env.Append(LIBS=[base_file])
+env.Append(LIBPATH=[base_path])
+
+
+# Function to print all library paths
+def print_lib_paths(env):
+    print("Library Paths:")
+    for path in env['LIBPATH']:
+        print(path)
+
+# Function to print all LIBS
+def print_libs(env):
+    print("Libraries:")
+    for lib in env['LIBS']:
+        print(lib)
+
+#print_lib_paths(env)
+#print_libs(env)
+
+# Sources
+env_gdextension = env_modules.Clone()
+
+env_gdextension.add_source_files(env.modules_sources, "*.cpp")
