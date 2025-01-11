@@ -66,6 +66,7 @@ if env["target"] in ["editor", "template_debug"]:
     except AttributeError:
         print("Not including class reference as we're targeting a pre-4.3 baseline.")
 
+# Dynamic lib
 file = "{}{}{}".format(libname, env["suffix"], env["SHLIBSUFFIX"])
 
 if env["platform"] == "macos" or env["platform"] == "ios":
@@ -79,6 +80,26 @@ library = env.SharedLibrary(
 )
 
 copy = env.InstallAs("{}/addons/{}/bin/{}/{}".format(projectdir, projectdir, env["platform"], file), library)
+
+default_args = [library, copy]
+if localEnv.get("compiledb", False):
+    default_args += [compilation_db]
+Default(*default_args)
+
+# Static lib
+file = "{}{}{}".format(libname, env["suffix"], env["LIBSUFFIX"])
+
+if env["platform"] == "macos" or env["platform"] == "ios":
+    platlibname = "{}.{}.{}".format(libname, env["platform"], env["target"])
+    file = "{}.framework/{}".format(env["platform"], platlibname, platlibname)
+
+libraryfile = "bin_static/{}/{}".format(env["platform"], file)
+library = env.StaticLibrary(
+    libraryfile,
+    source=sources,
+)
+
+copy = env.InstallAs("{}/addons/{}/bin_static/{}/{}".format(projectdir, projectdir, env["platform"], file), library)
 
 default_args = [library, copy]
 if localEnv.get("compiledb", False):
